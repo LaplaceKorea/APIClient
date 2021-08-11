@@ -1,4 +1,4 @@
-from typing import Callable, Dict, List, Tuple
+from typing import Callable, Dict, List, Tuple, cast
 import Operators as op
 import Target as ta
 import numpy as np
@@ -53,15 +53,36 @@ def toTarget(o: op.Target, weights: Dict[str,float]) -> ta.Target:
             ntMinimize = ta.Min(c.label, idEmbedding, c.quad, c.lin)
             terms.append(ntMinimize)
             parameters[c.label] = 1.0
+    bs: List[int] = []
     for a in o.annotations:
         tg = a.getTag()
         if tg == op.TERM_LABEL:
             pass
+        if tg == op.TERM_BITSIZE:
+            print("bitsize", a)
+            tgb = cast(op.TermBitsize, a)
+            name = tgb.left
+            ns = ""
+            if name.getTag() == op.TERM_SYMBOL:
+                ns = cast(op.TermSymbol, name).name
+            else:
+                raise Exception("bitsize/symbol/bad format")
+            nb = tgb.right
+            nbits = 0
+            if nb.getTag() == op.TERM_ATOM:
+                nbits = int(cast(op.TermAtom, nb).atom)
+            else:
+                raise Exception("bitsize/atom/bad format")
+            print(ns, nbits)
+            idx = o.positions[ns]
+            while idx >= len(bs):
+                bs.append(0)
+            bs[idx] = nbits
     for w in parameters:
         if w in weights:
             print(w, "<-", weights[w])
             parameters[w] = weights[w] 
-    return ta.Target(terms, parameters, init, interpretation)
+    return ta.Target(terms, bs, parameters, init, interpretation)
     
 def expressionToTarget(o: op.Term, weights: Dict[str,float]) -> ta.Target:
     t = op.extractOptTermOrCondition(o)

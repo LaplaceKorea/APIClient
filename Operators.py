@@ -29,6 +29,7 @@ TERM_DECLARE=_operatorsIota()
 TERM_LABEL=_operatorsIota()
 TERM_OPT=_operatorsIota()
 TERM_TARGET=_operatorsIota()
+TERM_BITSIZE=_operatorsIota()
 
 _TermAdd_ : Callable[[Any,Any],Any] = lambda x,y: None
 _TermSub_ : Callable[[Any,Any],Any] = lambda x,y: None
@@ -208,6 +209,16 @@ class TermDeclare(Term):
     def __repr__(self):
         return "TermDeclare(" + str(self.left) + "," + str(self.right) + ")"
 
+class TermBitsize(Term):
+    def getTag(self)->int:
+        return TERM_BITSIZE
+    def __init__(self, x, y):
+        self.tag = self.getTag()
+        self.left = cast(Term,_Wrapper_(x))
+        self.right = cast(Term,_Wrapper_(y))
+    def __repr__(self):
+        return "TermBitsize(" + str(self.left) + "," + str(self.right) + ")"
+
 class TermLabel(Term):
     def getTag(self)->int:
         return TERM_LABEL
@@ -374,6 +385,9 @@ def declare(a,b):
 
 def label(a,b):
     return TermLabel(a,b)
+
+def bitsize(a,b):
+    return TermBitsize(a,b)
 
 _Wrapper_ = wrap
 
@@ -985,8 +999,11 @@ def extractOptTermOrCondition(t: Term) -> Target:
             o = OptTerm(quad, lin, OPT_TERM_EQ, extractConst(teq.right,h,quad,lin), "")
             return Target(ta.components + [o], ta.annotations, h.at, h.minSize)
         if tag == TERM_GETITEM:
-            tgi = cast(TermEqual, t)
+            tgi = cast(TermGetItem, t)
             return Target(ta.components, ta.annotations + [tgi], h.at, h.minSize)
+        if tag == TERM_BITSIZE:
+            tbs = cast(TermBitsize, t)
+            return Target(ta.components, ta.annotations + [tbs], h.at, h.minSize)            
         if tag == TERM_LABEL:
             tlabel = cast(TermLabel, t)
             #print(">> label ", t, tlabel.right)
@@ -1049,3 +1066,4 @@ def extractOptTermOrCondition(t: Term) -> Target:
     return extraOptTermOrCondition_(t, Target([],[], h.at, h.minSize), h)
 
 ## TODO: eval AST to check end results!
+## TODO: sum(.) bug to cleanup ~

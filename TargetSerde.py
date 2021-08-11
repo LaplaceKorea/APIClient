@@ -177,6 +177,7 @@ def makeTerm(t: TermSerde)->Term:
 @dataclass
 class TargetSerde:
     Terms: List[TermSerdeNode]
+    ForceNBits: List[int]
     Parameters: Dict[str, float]
     Initialization: Dict[str, Tuple[EmbeddingSerde, Union[List[float],List[List[float]]]]]
 
@@ -188,14 +189,14 @@ def makeTargetSerde(t: Target) -> TargetSerde:
     for k in t.Initialization:
         embed, value = t.Initialization[k]
         init[k] = (makeEmbeddingSerde(embed), value.tolist())
-    return TargetSerde([cast(TermSerdeNode, makeTermSerde(s)) for s in t.Terms], t.Parameters, init)
+    return TargetSerde([cast(TermSerdeNode, makeTermSerde(s)) for s in t.Terms], t.ForceNBits, t.Parameters, init)
 
 def makeTarget(t: TargetSerde) -> Target:
     init: Dict[str, Tuple[Embedding,np.ndarray]] = {}
     for k in t.Initialization:
         embed, value = t.Initialization[k]
         init[k] = (makeEmbedding(embed), np.ndarray(value, dtype=np.float))
-    return Target([makeTerm(s) for s in t.Terms], t.Parameters, init, {})
+    return Target([makeTerm(s) for s in t.Terms], t.ForceNBits, t.Parameters, init, {})
 
 # not for now
 #"""

@@ -1,8 +1,10 @@
 import asyncio
+from dataclasses_serialization.serializer_base.serializer import Serializer
 import websockets
 import json
 from MarkowitzSerde import *
 from TargetSerde import *
+from RLStructure import *
 
 async def query(uri: str, m: MarkowitzProblem, onCompletion: Callable[[MarkowitzSolution],None]):
     #uri = "ws://localhost:8765"
@@ -46,6 +48,15 @@ async def queryExtraQUBO(uri: str, m: ExtractQUBO, onCompletion: Callable[[QUBOS
         print("result=", r)
         onCompletion(r) 
 
+async def queryRLSimu(uri: str, m: RLQuery, onCompletion: Callable[[RLResult],None]):
+    async with websockets.connect(uri, max_size=2**25, ping_timeout=None) as websocket:
+        await websocket.send(serializeRLQueryQuery(m))
+        rv = await websocket.recv()       
+        r = JSONSerializer.deserialize(RLResult, json.loads(rv))
+        #print(r)
+        print(r.Status)
+        onCompletion(r)
+
 def performQuery(uri: str, q: MarkowitzProblem, onCompletion: Callable[[makeMarkowitzSolution],None]):
     asyncio.get_event_loop().run_until_complete(query(uri, q, onCompletion))
 
@@ -57,3 +68,6 @@ def performQuerySolverProblem(uri: str, m: SolverProblem, onCompletion: Callable
 
 def performQueryExtraQUBO(uri: str, m: ExtractQUBO, onCompletion: Callable[[QUBOSolution],None]):
     asyncio.get_event_loop().run_until_complete(queryExtraQUBO(uri, m, onCompletion))
+
+def performQueryRLQuery(uri: str, m: RLQuery, onCompletion: Callable[[RLResult],None]):
+    asyncio.get_event_loop().run_until_complete(queryRLSimu(uri, m, onCompletion))
